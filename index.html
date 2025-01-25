@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Şifreli Mesajlaşma</title>
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --bg-color: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --message-bg: #2d2d2d;
+            --border-color: #404040;
+            --text-color: #e5e5e5;
+            --text-secondary: #a3a3a3;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .settings-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--primary-color);
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+
+        .settings-btn:hover {
+            background-color: rgba(37, 99, 235, 0.1);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #64748b;
+        }
+
+        .messages {
+            height: 400px;
+            border: 1px solid var(--border-color);
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 12px;
+            background-color: var(--message-bg);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .message {
+            background-color: var(--card-bg);
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 1px solid var(--border-color);
+        }
+
+        .message:hover {
+            transform: translateY(-1px);
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            background-color: var(--message-bg);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="email"] {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        button {
+            padding: 8px 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        /* Hamburger Menü Stilleri */
+        .hamburger-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 300px;
+            background-color: var(--card-bg);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+            z-index: 1000;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .hamburger-menu.active {
+            transform: translateX(0);
+        }
+
+        .menu-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--primary-color);
+            padding: 10px;
+            border-radius: 50%;
+            background-color: var(--card-bg);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .menu-header img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .menu-items {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 100px);
+        }
+
+        .menu-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-item:hover {
+            background-color: var(--bg-color);
+        }
+
+        .menu-item.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* Ana içerik alanı */
+        .main-content {
+            margin-left: 0;
+            transition: margin-left 0.3s ease-in-out;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+        }
+
+        .main-content.menu-open {
+            margin-left: 300px;
+        }
+
+        /* Sayfa geçişleri için */
+        .page {
+            display: none;
+            padding: 20px;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Sayfa içerikleri için container */
+        .page-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Auth sayfası stilleri */
+        .auth-container {
+            max-width: 400px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .auth-tab.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            margin-bottom: -2px;
+        }
+
+        .menu-auth {
+            margin-top: auto;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+
+        /* PIN input için özel stil */
+        input[type="password"][maxlength="3"] {
+            letter-spacing: 0.5em;
+            font-size: 1.2em;
+            text-align: center;
+            width: 100px;
+        }
+
+        /* Kişiler listesi için stil */
+        .contact-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .contact-item:hover {
+            transform: translateY(-1px);
+        }
+
+        .contact-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 12px;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .alert {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .alert-error {
+            background-color: #dc2626;
+            color: white;
+        }
+
+        .alert-success {
+            background-color: #059669;
+            color: white;
+        }
+
+        .contact-description {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .contact-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 4px;
+        }
+
+        .contact-status.online {
+            background-color: #10b981;
+        }
+
+        .contact-status.offline {
+            background-color: #6b7280;
+        }
+
+        .bot-message {
+            background-color: var(--primary-color) !important;
+            color: white;
+            margin-left: auto;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background-color: var(--card-bg);
+            margin-right: auto;
+            max-width: 80%;
+        }
+
+        .contacts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .contacts-count {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+
+        .contacts-search {
+            margin-bottom: 20px;
+        }
+
+        .contacts-search input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        .bot-contact {
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .contact-status-text {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .contact-avatar.online {
+            border: 2px solid #10b981;
+        }
+
+        .add-contact {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .contact-input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- Hamburger Menü -->
+    <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+    
+    <div class="hamburger-menu">
+        <div class="menu-header">
+            <img id="menuProfileImage" src="/default-avatar.png" alt="Profil">
+            <div>
+                <h3 id="menuUserName"></h3>
+                <small id="menuUserEmail"></small>
+            </div>
+        </div>
+        <div class="menu-items">
+            <!-- Giriş yapmamış kullanıcılar için -->
+            <div class="menu-item menu-login" onclick="showPage('auth')">
+                🔑 Giriş Yap
+            </div>
+            <div class="menu-item menu-register" onclick="showAuthTab('register')">
+                📝 Kayıt Ol
+            </div>
+
+            <!-- Giriş yapmış kullanıcılar için -->
+            <div class="menu-item active menu-messages" onclick="showPage('messages')">
+                💬 Mesajlar
+            </div>
+            <div class="menu-item menu-contacts" onclick="showPage('contacts')">
+                👥 Kişiler
+            </div>
+            <div class="menu-item menu-profile" onclick="showPage('profile')">
+                👤 Profil
+            </div>
+            <div class="menu-item menu-settings" onclick="showPage('settings')">
+                ⚙️ Ayarlar
+            </div>
+            <div class="menu-item menu-auth" onclick="handleLogout()">
+                🚪 Çıkış Yap
+            </div>
+        </div>
+    </div>
+
+    <!-- Ana İçerik -->
+    <div class="main-content">
+        <!-- Giriş/Kayıt Sayfası -->
+        <div id="authPage" class="page">
+            <div class="auth-container">
+                <div id="loginAlert" class="alert"></div>
+                <div id="registerAlert" class="alert"></div>
+                <div class="auth-tabs">
+                    <div class="auth-tab active" onclick="switchAuthTab('login')">Giriş Yap</div>
+                    <div class="auth-tab" onclick="switchAuthTab('register')">Kayıt Ol</div>
+                </div>
+                
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label>E-posta</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Şifre</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit">Giriş Yap</button>
+                </form>
+
+                <form id="registerForm" style="display: none;">
+                    <div class="form-group">
+                        <label>Ad Soyad</label>
+                        <input type="text" id="registerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>E-posta</label>
+                        <input type="email" id="registerEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Şifre</label>
+                        <input type="password" id="registerPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label>PIN (3 haneli)</label>
+                        <input type="password" id="registerPin" maxlength="3" required>
+                    </div>
+                    <button type="submit">Kayıt Ol</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Mesajlaşma Sayfası -->
+        <div id="messagesPage" class="page">
+            <div class="page-content">
+                <div class="messages" id="messageContainer">
+                    <!-- Mesajlar buraya gelecek -->
+                </div>
+
+                <div class="input-container">
+                    <input type="text"
+                           id="messageInput"
+                           placeholder="Mesajınızı yazın...">
+                    <button onclick="sendMessage()">Gönder</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kişiler Sayfası -->
+        <div id="contactsPage" class="page">
+            <div class="page-content">
+                <div class="contacts-header">
+                    <h2>Kişiler</h2>
+                    <div class="contacts-count">Toplam: <span id="contactCount">0</span></div>
+                </div>
+                <div class="add-contact">
+                    <input type="email" 
+                           id="newContactEmail" 
+                           placeholder="Kişi eklemek için e-posta girin..."
+                           class="contact-input">
+                    <button onclick="addContact()">Ekle</button>
+                </div>
+                <div class="contacts-search">
+                    <input type="text" 
+                           placeholder="Kişi ara..." 
+                           onkeyup="searchContacts(this.value)">
+                </div>
+                <div class="contacts-list" id="contactsList">
+                    <!-- Kişiler listesi buraya gelecek -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Profil Sayfası -->
+        <div id="profilePage" class="page">
+            <div class="page-content">
+                <h2>Profil</h2>
+                <div class="form-group">
+                    <label>Profil Fotoğrafı</label>
+                    <input type="file" accept="image/*" id="profileImage">
+                </div>
+                <div class="form-group">
+                    <label>Ad Soyad</label>
+                    <input type="text" id="profileName">
+                </div>
+                <div class="form-group">
+                    <label>E-posta</label>
+                    <input type="email" id="profileEmail" readonly>
+                </div>
+                <button onclick="saveProfile()">Kaydet</button>
+            </div>
+        </div>
+
+        <!-- Ayarlar Sayfası -->
+        <div id="settingsPage" class="page">
+            <div class="page-content">
+                <h2>Ayarlar</h2>
+                <div class="form-group">
+                    <label>Mesaj PIN (3 haneli)</label>
+                    <input type="password" id="settingsPin" maxlength="3">
+                </div>
+                <div class="form-group">
+                    <label>Şifre Değiştir</label>
+                    <input type="password" placeholder="Mevcut Şifre" id="currentPassword">
+                    <input type="password" placeholder="Yeni Şifre" id="newPassword">
+                </div>
+                <button onclick="saveSettings()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1>Şifreli Mesajlaşma</h1>
+        <button class="settings-btn" onclick="openSettings()">⚙️</button>
+    </div>
+
+    <div class="messages" id="messageContainer">
+        <!-- Mesajlar buraya gelecek -->
+    </div>
+
+    <div class="input-container">
+        <input type="text"
+               id="messageInput"
+               placeholder="Mesajınızı yazın...">
+        <button onclick="sendMessage()">Gönder</button>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Ayarlar</h2>
+                <button class="close-btn" onclick="closeSettings()">✕</button>
+            </div>
+            <div class="form-group">
+                <label for="pinInput">PIN Kodu (3 haneli)</label>
+                <input type="password"
+                       id="pinInput"
+                       maxlength="3"
+                       placeholder="Yeni PIN giriniz"
+                       style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 8px;">
+            </div>
+            <button onclick="saveSettings()">Kaydet</button>
+        </div>
+    </div>
+
+    <script>
+        let PIN = localStorage.getItem('messagePin') || '123';
+        let messages = [];
+        let selectedMessageId = null;
+        let pinBuffer = '';
+        let pinTimeout;
+        let selectedUserId = null;
+        let testContacts = [
+            {
+                id: 1,
+                name: 'Test 001',
+                avatar: null,
+                status: 'online',
+                isBot: true,
+                description: 'Yapay Zeka Sohbet Botu'
+            }
+        ];
+
+        const emojiMap = {
+            'a': '😀', 'b': '😂', 'c': '😊', 'd': '😇', 'e': '🥰',
+            'f': '😎', 'g': '🤩', 'h': '🥳', 'i': '😋', 'j': '🤗',
+            'k': '🤔', 'l': '🤫', 'm': '🤭', 'n': '🧐', 'o': '😉',
+            'p': '😌', 'q': '😍', 'r': '🥲', 's': '😪', 't': '😴',
+            'u': '🤤', 'v': '😵', 'w': '🤯', 'x': '🤠', 'y': '🥸',
+            'z': '🤡', ' ': '⭐️', '0': '🔥', '1': '💫', '2': '✨',
+            '3': '⚡️', '4': '💥', '5': '🌙', '6': '☀️', '7': '🌟',
+            '8': '🌈', '9': '🌊'
+        };
+
+        function encryptMessage(message) {
+            return message.toLowerCase().split('').map(char => {
+                return emojiMap[char] || char;
+            }).join('');
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                const messageObj = {
+                    id: Date.now(),
+                    text: encryptMessage(message),
+                    originalText: message,
+                    isEncrypted: true
+                };
+                
+                messages.push(messageObj);
+                input.value = '';
+                renderMessages();
+            }
+        }
+
+        function renderMessages() {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = messages.map(msg => `
+                <div class="message" onclick="handleMessageClick(${msg.id})">
+                    ${msg.isEncrypted ? msg.text : msg.originalText}
+                </div>
+            `).join('');
+        }
+
+        function handleMessageClick(messageId) {
+            selectedMessageId = messageId;
+        }
+
+        // Klavyeden PIN girişini dinle
+        document.addEventListener('keydown', function(e) {
+            if ((selectedMessageId || selectedUserId) && !isNaN(e.key) && e.key !== ' ') {
+                pinBuffer += e.key;
+                
+                // Önceki timeout'u temizle
+                if (pinTimeout) clearTimeout(pinTimeout);
+                
+                // 1 saniye sonra pin buffer'ı temizle
+                pinTimeout = setTimeout(() => {
+                    pinBuffer = '';
+                }, 1000);
+                
+                // PIN uzunluğu 3'e ulaştığında kontrol et
+                if (pinBuffer.length === 3) {
+                    const userPin = JSON.parse(localStorage.getItem('user')).pin;
+                    if (pinBuffer === userPin) {
+                        if (selectedMessageId === 'name-' + selectedUserId) {
+                            document.getElementById('selectedUserName').textContent = 
+                                selectedUserName;
+                        } else if (selectedMessageId) {
+                            messages = messages.map(msg => {
+                                if (msg.id === selectedMessageId) {
+                                    return { ...msg, isEncrypted: false };
+                                }
+                                return msg;
+                            });
+                            renderMessages();
+                        }
+                        selectedMessageId = null;
+                    }
+                    pinBuffer = '';
+                }
+            }
+        });
+
+        // Enter tuşu ile mesaj gönderme
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function openSettings() {
+            document.getElementById('settingsModal').classList.add('active');
+            document.getElementById('pinInput').value = '';
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        function saveSettings() {
+            const newPin = document.getElementById('pinInput').value;
+            if (newPin.length === 3 && !isNaN(newPin)) {
+                PIN = newPin;
+                localStorage.setItem('messagePin', PIN);
+                closeSettings();
+                alert('PIN başarıyla güncellendi!');
+            } else {
+                alert('Lütfen 3 haneli geçerli bir PIN giriniz!');
+            }
+        }
+
+        // Menü işlemleri
+        function toggleMenu() {
+            document.querySelector('.hamburger-menu').classList.toggle('active');
+            document.querySelector('.main-content').classList.toggle('menu-open');
+        }
+
+        function showPage(pageId) {
+            // Tüm sayfaları gizle
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+
+            // Seçilen sayfayı göster
+            document.getElementById(pageId + 'Page').classList.add('active');
+
+            // Menü öğelerinin active durumunu güncelle
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            // Mobil görünümde menüyü kapat
+            if (window.innerWidth <= 768) {
+                toggleMenu();
+            }
+        }
+
+        function updateMenuItems() {
+            const token = localStorage.getItem('token');
+            const authenticatedItems = document.querySelectorAll('.menu-messages, .menu-contacts, .menu-profile, .menu-settings, .menu-auth');
+            const unauthenticatedItems = document.querySelectorAll('.menu-login, .menu-register');
+            
+            if (token) {
+                // Giriş yapmış kullanıcı
+                authenticatedItems.forEach(item => item.style.display = 'flex');
+                unauthenticatedItems.forEach(item => item.style.display = 'none');
+                document.querySelector('.menu-header').style.display = 'flex';
+            } else {
+                // Giriş yapmamış kullanıcı
+                authenticatedItems.forEach(item => item.style.display = 'none');
+                unauthenticatedItems.forEach(item => item.style.display = 'flex');
+                document.querySelector('.menu-header').style.display = 'none';
+            }
+        }
+
+        function showAuthTab(tab) {
+            showPage('auth');
+            switchAuthTab(tab);
+        }
+
+        // Sayfa yüklendiğinde çağrılan fonksiyonu güncelle
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user'));
+
+            if (token && user) {
+                document.getElementById('menuUserName').textContent = user.name;
+                document.getElementById('menuUserEmail').textContent = user.email;
+                if (user.imageUrl) {
+                    document.getElementById('menuProfileImage').src = user.imageUrl;
+                }
+                showPage('contacts');
+                renderContacts();
+                updateContactCount();
+            } else {
+                showPage('auth');
+            }
+            
+            updateMenuItems();
+        });
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            updateMenuItems();
+            showAlert('success', 'Çıkış yapıldı!', 'login');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+
+        // Bot yanıtları için basit bir AI sistemi
+        const botResponses = {
+            greetings: ['Merhaba!', 'Selam!', 'Nasılsın?'],
+            questions: ['Nasıl yardımcı olabilirim?', 'Başka bir konuda yardıma ihtiyacın var mı?'],
+            unknown: ['Anlamadım, başka türlü açıklayabilir misin?', 'Bu konuda net değilim.'],
+            farewell: ['Görüşürüz!', 'İyi günler!', 'Tekrar görüşmek üzere!']
+        };
+
+        // Bot mesajlarını şifrele
+        function encryptBotMessage(message) {
+            // Emoji şifreleme mantığını kullan
+            return message.split('').map(char => emojiMap[char] || char).join('');
+        }
+
+        // Bot yanıtı oluştur
+        function generateBotResponse(message) {
+            message = message.toLowerCase();
+            let response;
+
+            if (message.includes('merhaba') || message.includes('selam')) {
+                response = botResponses.greetings[Math.floor(Math.random() * botResponses.greetings.length)];
+            } else if (message.includes('?')) {
+                response = botResponses.questions[Math.floor(Math.random() * botResponses.questions.length)];
+            } else if (message.includes('görüşürüz') || message.includes('bye')) {
+                response = botResponses.farewell[Math.floor(Math.random() * botResponses.farewell.length)];
+            } else {
+                response = botResponses.unknown[Math.floor(Math.random() * botResponses.unknown.length)];
+            }
+
+            return {
+                id: Date.now(),
+                text: encryptBotMessage(response),
+                originalText: response,
+                isEncrypted: true,
+                sender: 'bot'
+            };
+        }
+
+        // Login form submit güncelleme
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                if ((email === 'test@test.com' && password === '123456') || 
+                    (email === 'admin@admin' && password === 'admin')) {
+                    showAlert('success', 'Giriş başarılı! Yönlendiriliyorsunuz...', 'login');
+                    
+                    const isAdmin = email === 'admin@admin';
+                    localStorage.setItem('token', 'test-token');
+                    localStorage.setItem('user', JSON.stringify({
+                        name: isAdmin ? 'Admin' : 'Test Kullanıcı',
+                        email: email,
+                        pin: '123',
+                        isAdmin: isAdmin
+                    }));
+
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showAlert('error', 'E-posta veya şifre hatalı!', 'login');
+                }
+            } catch (error) {
+                showAlert('error', 'Giriş yapılırken bir hata oluştu!', 'login');
+            }
+        });
+
+        // Register form submit
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const pin = document.getElementById('registerPin').value;
+
+            try {
+                // Form validasyonu
+                if (password.length < 6) {
+                    showAlert('error', 'Şifre en az 6 karakter olmalıdır!', 'register');
+                    return;
+                }
+
+                if (pin.length !== 3) {
+                    showAlert('error', 'PIN 3 haneli olmalıdır!', 'register');
+                    return;
+                }
+
+                if (!email.includes('@')) {
+                    showAlert('error', 'Geçerli bir e-posta adresi giriniz!', 'register');
+                    return;
+                }
+
+                // Burada normalde API çağrısı yapılacak
+                // Şimdilik başarılı kabul edelim
+                showAlert('success', 'Kayıt başarılı! Yönlendiriliyorsunuz...', 'register');
+
+                // Kullanıcı bilgilerini kaydet
+                localStorage.setItem('token', 'test-token');
+                localStorage.setItem('user', JSON.stringify({
+                    name: name,
+                    email: email,
+                    pin: pin
+                }));
+
+                // Kısa bir gecikme ile yönlendir
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+
+            } catch (error) {
+                showAlert('error', 'Kayıt olurken bir hata oluştu!', 'register');
+            }
+        });
+
+        // Kişiler listesini render et
+        function renderContacts() {
+            const contactsList = document.getElementById('contactsList');
+            if (!contactsList) return;
+
+            renderContactsList(testContacts);
+        }
+
+        function renderContactsList(contacts) {
+            const contactsList = document.getElementById('contactsList');
+            contactsList.innerHTML = contacts.map(contact => `
+                <div class="contact-item ${contact.isBot ? 'bot-contact' : ''}" 
+                     onclick="selectContact(${contact.id})">
+                    <div class="contact-avatar ${contact.status}">
+                        ${contact.avatar ? 
+                            `<img src="${contact.avatar}" alt="${contact.name}">` : 
+                            contact.name.charAt(0)}
+                    </div>
+                    <div class="contact-info">
+                        <div class="contact-name">
+                            ${contact.name}
+                            ${contact.isBot ? ' 🤖' : ''}
+                        </div>
+                        <div class="contact-description">${contact.description || ''}</div>
+                        <div class="contact-status-text">
+                            ${contact.status === 'online' ? '🟢 Çevrimiçi' : '⚫️ Çevrimdışı'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectContact(contactId) {
+            const contact = testContacts.find(c => c.id === contactId);
+            if (contact) {
+                selectedUserId = contactId;
+                showPage('messages');
+                
+                // Mesajlaşma başlığını güncelle
+                const header = document.querySelector('.page-content h2') || 
+                             document.createElement('h2');
+                header.textContent = `${contact.name} ${contact.isBot ? '🤖' : ''}`;
+                
+                // Mesajları temizle
+                messages = [];
+                renderMessages();
+            }
+        }
+
+        // Kişi arama fonksiyonu
+        function searchContacts(query) {
+            const contactsList = document.getElementById('contactsList');
+            const filteredContacts = testContacts.filter(contact => 
+                contact.name.toLowerCase().includes(query.toLowerCase()) ||
+                (contact.description && contact.description.toLowerCase().includes(query.toLowerCase()))
+            );
+            
+            renderContactsList(filteredContacts);
+        }
+
+        // PIN input elementlerine event listener ekle
+        document.querySelectorAll('input[type="password"][maxlength="3"]').forEach(input => {
+            input.addEventListener('input', function() {
+                handlePinInput(this);
+            });
+        });
+
+        function switchAuthTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.auth-tab:${tab === 'login' ? 'first-child' : 'last-child'}`).classList.add('active');
+            
+            document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+            document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+        }
+
+        // Alert gösterme fonksiyonu
+        function showAlert(type, message, formType = 'login') {
+            const alert = document.getElementById(formType + 'Alert');
+            alert.textContent = message;
+            alert.style.display = 'block';
+            alert.className = `alert alert-${type}`;
+            
+            // 3 saniye sonra alert'i gizle
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 3000);
+        }
+
+        // Kişi ekleme fonksiyonu
+        function addContact() {
+            const emailInput = document.getElementById('newContactEmail');
+            const email = emailInput.value.trim();
+
+            if (!email || !email.includes('@')) {
+                showAlert('error', 'Geçerli bir e-posta adresi giriniz!', 'contacts');
+                return;
+            }
+
+            // Eğer e-posta zaten ekli ise
+            if (testContacts.some(contact => contact.email === email)) {
+                showAlert('error', 'Bu kişi zaten ekli!', 'contacts');
+                return;
+            }
+
+            // Yeni kişi ekle
+            const newContact = {
+                id: testContacts.length + 1,
+                name: email.split('@')[0], // E-postadan isim oluştur
+                email: email,
+                avatar: null,
+                status: 'offline',
+                description: 'Yeni eklenen kişi'
+            };
+
+            testContacts.push(newContact);
+            emailInput.value = '';
+            updateContactCount();
+            renderContacts();
+            showAlert('success', 'Kişi başarıyla eklendi!', 'contacts');
+        }
+
+        // Kişi sayısını güncelle
+        function updateContactCount() {
+            const countElement = document.getElementById('contactCount');
+            if (countElement) {
+                countElement.textContent = testContacts.length;
+            }
+        }
+    </script>
+</body>
+</html> 
