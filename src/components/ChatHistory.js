@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AIBot } from '../services/AIBot';
 
 const ChatHistory = ({ contactId }) => {
   const [messages, setMessages] = useState([]);
@@ -25,12 +26,29 @@ const ChatHistory = ({ contactId }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (messageInput.trim()) {
-      const newMessage = {
+      // Kullanıcı mesajı
+      const userMessage = {
         id: Date.now(),
         text: messageInput,
         timestamp: new Date().toISOString(),
+        isUser: true
       };
-      addMessage(newMessage);
+      addMessage(userMessage);
+
+      // Eğer seçili kişi bot ise
+      if (contactId === 'ai-bot') {
+        // Bot cevabı
+        setTimeout(() => {
+          const botResponse = {
+            id: Date.now() + 1,
+            text: AIBot.generateResponse(messageInput),
+            timestamp: new Date().toISOString(),
+            isBot: true
+          };
+          addMessage(botResponse);
+        }, 1000); // 1 saniyelik gecikme ile bot cevap versin
+      }
+
       setMessageInput('');
     }
   };
