@@ -19,17 +19,53 @@ const ChatHistory = ({ contactId }) => {
   };
 
   useEffect(() => {
-    // Karşılama mesajını göster
-    if (contactId === 'ai-bot') {
+    loadMessages();
+  }, [contactId]);
+
+  // Mesajları yükle
+  const loadMessages = () => {
+    // LocalStorage'dan mevcut sohbeti yükle
+    const savedMessages = localStorage.getItem(`chat_${contactId}`);
+    let chatMessages = savedMessages ? JSON.parse(savedMessages) : [];
+
+    // Eğer bot ile ilk konuşma ise karşılama mesajı ekle
+    if (contactId === 'ai-bot' && chatMessages.length === 0) {
       const welcomeMessage = {
         id: Date.now(),
         text: 'Merhaba! Ben YZ Asistanı. Size nasıl yardımcı olabilirim?',
         timestamp: new Date().toISOString(),
         isBot: true
       };
-      setMessages([welcomeMessage]);
+      chatMessages = [welcomeMessage];
+      saveMessages(chatMessages);
     }
-  }, [contactId]);
+
+    setMessages(chatMessages);
+    scrollToBottom();
+  };
+
+  // Mesajları kaydet
+  const saveMessages = (newMessages) => {
+    localStorage.setItem(`chat_${contactId}`, JSON.stringify(newMessages));
+  };
+
+  // Yeni mesaj ekle
+  const addMessage = (message) => {
+    const updatedMessages = [...messages, message];
+    setMessages(updatedMessages);
+    saveMessages(updatedMessages);
+    scrollToBottom();
+  };
+
+  // Otomatik kaydırma
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      const messagesContainer = document.querySelector('.messages-container');
+      if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+    }, 100);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -41,7 +77,7 @@ const ChatHistory = ({ contactId }) => {
         timestamp: new Date().toISOString(),
         isUser: true
       };
-      setMessages(prev => [...prev, userMessage]);
+      addMessage(userMessage);
 
       // Bot yanıtı
       if (contactId === 'ai-bot') {
@@ -52,7 +88,7 @@ const ChatHistory = ({ contactId }) => {
             timestamp: new Date().toISOString(),
             isBot: true
           };
-          setMessages(prev => [...prev, botResponse]);
+          addMessage(botResponse);
         }, 500);
       }
       setMessageInput('');
@@ -89,6 +125,7 @@ const ChatHistory = ({ contactId }) => {
           onChange={(e) => setMessageInput(e.target.value)}
           placeholder="Mesajınızı yazın..."
           className="message-input"
+          autoFocus
         />
         <button type="submit" className="send-button">Gönder</button>
       </form>
