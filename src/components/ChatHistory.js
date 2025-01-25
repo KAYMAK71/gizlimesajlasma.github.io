@@ -89,12 +89,29 @@ const ChatHistory = ({ contactId }) => {
       } else {
         // Kullanıcılar arası mesajlaşma
         try {
-          const newMessages = AuthService.saveMessage(
-            currentUser.email,
-            contactId,
-            messageInput
-          );
-          setMessages(newMessages);
+          // Yeni mesaj objesi oluştur
+          const newMessage = {
+            id: Date.now(),
+            senderId: currentUser.email,
+            receiverId: contactId,
+            text: messageInput,
+            timestamp: new Date().toISOString()
+          };
+
+          // Mevcut sohbeti al
+          const chatId = [currentUser.email, contactId].sort().join('_');
+          const allChats = JSON.parse(localStorage.getItem('all_chats') || '{}');
+          const currentChat = allChats[chatId] || [];
+          
+          // Yeni mesajı ekle
+          currentChat.push(newMessage);
+          
+          // Güncellenmiş sohbeti kaydet
+          allChats[chatId] = currentChat;
+          localStorage.setItem('all_chats', JSON.stringify(allChats));
+          
+          // Mesajları güncelle
+          setMessages(currentChat);
           scrollToBottom();
         } catch (error) {
           console.error('Mesaj gönderilemedi:', error);
@@ -134,8 +151,10 @@ const ChatHistory = ({ contactId }) => {
         {messages.map(message => (
           <div
             key={message.id}
-            className={`message ${message.isBot ? 'bot' : 
-              message.senderId === currentUser.email ? 'user' : 'other'}`}
+            className={`message ${
+              message.isBot ? 'bot' : 
+              message.senderId === currentUser.email ? 'user' : 'other'
+            }`}
           >
             <div className="message-content">{message.text}</div>
             <div className="message-timestamp">

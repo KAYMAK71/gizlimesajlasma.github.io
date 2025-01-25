@@ -5,24 +5,31 @@ import '../styles/ContactList.css';
 const ContactList = ({ onSelectContact }) => {
   const [contacts, setContacts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const currentUser = AuthService.getCurrentUser();
 
   useEffect(() => {
-    // YZ Asistanı'nı oluştur
+    // Tüm kullanıcıları al
+    const allUsers = AuthService.getUsers();
+    
+    // Bot ve diğer kullanıcıları ayır
     const aiBot = {
       id: 'ai-bot',
       name: 'YZ Asistanı',
       isBot: true,
-      pin: '123',
       description: 'Yapay Zeka Sohbet Botu'
     };
 
-    // Asistanı direkt olarak contacts listesine ekle
-    setContacts([aiBot]);
+    // Mevcut kullanıcı hariç diğer kullanıcıları filtrele
+    const otherUsers = allUsers.filter(user => user.email !== currentUser.email);
+    
+    // Bot ve diğer kullanıcıları birleştir
+    setContacts([aiBot, ...otherUsers]);
   }, []);
 
-  // Arama filtrelemesi
   const filteredContacts = contacts.filter(contact =>
-    contact.name.toLowerCase().includes(searchTerm.toLowerCase())
+    contact.isBot ? 
+      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) :
+      (contact.name || contact.email).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -38,19 +45,22 @@ const ContactList = ({ onSelectContact }) => {
       <div className="contacts">
         {filteredContacts.map(contact => (
           <div
-            key={contact.id}
+            key={contact.isBot ? contact.id : contact.email}
             className={`contact-item ${contact.isBot ? 'bot-contact' : ''}`}
-            onClick={() => onSelectContact(contact)}
+            onClick={() => onSelectContact(contact.isBot ? 'ai-bot' : contact.email)}
           >
             <div className="contact-avatar">
-              {contact.isBot ? '🤖' : contact.name.charAt(0)}
+              {contact.isBot ? '🤖' : (contact.name ? contact.name[0].toUpperCase() : '👤')}
             </div>
             <div className="contact-info">
               <div className="contact-name">
-                {contact.name}
+                {contact.isBot ? contact.name : (contact.name || contact.email)}
               </div>
               {contact.description && (
                 <div className="contact-description">{contact.description}</div>
+              )}
+              {!contact.isBot && (
+                <div className="contact-email">{contact.email}</div>
               )}
               {contact.isBot && <div className="bot-badge">Bot</div>}
             </div>
