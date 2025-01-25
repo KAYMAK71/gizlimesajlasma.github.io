@@ -439,23 +439,206 @@
             background-color: var(--card-bg);
             color: var(--text-color);
         }
-
-        /* Alt menüyü gizle */
-        .browser-tabs {
-            display: none !important;
-        }
-        
-        /* Sayfanın tam yükseklikte görünmesini sağla */
-        html, body, #root {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <!-- Hamburger Menü -->
+    <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+    
+    <div class="hamburger-menu">
+        <div class="menu-header">
+            <img id="menuProfileImage" src="/default-avatar.png" alt="Profil">
+            <div>
+                <h3 id="menuUserName"></h3>
+                <small id="menuUserEmail"></small>
+            </div>
+        </div>
+        <div class="menu-items">
+            <!-- Giriş yapmamış kullanıcılar için -->
+            <div class="menu-item menu-login" onclick="showPage('auth')">
+                🔑 Giriş Yap
+            </div>
+            <div class="menu-item menu-register" onclick="showAuthTab('register')">
+                📝 Kayıt Ol
+            </div>
+
+            <!-- Giriş yapmış kullanıcılar için -->
+            <div class="menu-item active menu-messages" onclick="showPage('messages')">
+                💬 Mesajlar
+            </div>
+            <div class="menu-item menu-contacts" onclick="showPage('contacts')">
+                👥 Kişiler
+            </div>
+            <div class="menu-item menu-profile" onclick="showPage('profile')">
+                👤 Profil
+            </div>
+            <div class="menu-item menu-settings" onclick="showPage('settings')">
+                ⚙️ Ayarlar
+            </div>
+            <div class="menu-item menu-auth" onclick="handleLogout()">
+                🚪 Çıkış Yap
+            </div>
+        </div>
+    </div>
+
+    <!-- Ana İçerik -->
+    <div class="main-content">
+        <!-- Giriş/Kayıt Sayfası -->
+        <div id="authPage" class="page">
+            <div class="auth-container">
+                <div id="loginAlert" class="alert"></div>
+                <div id="registerAlert" class="alert"></div>
+                <div class="auth-tabs">
+                    <div class="auth-tab active" onclick="switchAuthTab('login')">Giriş Yap</div>
+                    <div class="auth-tab" onclick="switchAuthTab('register')">Kayıt Ol</div>
+                </div>
+                
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label>E-posta</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Şifre</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit">Giriş Yap</button>
+                </form>
+
+                <form id="registerForm" style="display: none;">
+                    <div class="form-group">
+                        <label>Ad Soyad</label>
+                        <input type="text" id="registerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>E-posta</label>
+                        <input type="email" id="registerEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Şifre</label>
+                        <input type="password" id="registerPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label>PIN (3 haneli)</label>
+                        <input type="password" id="registerPin" maxlength="3" required>
+                    </div>
+                    <button type="submit">Kayıt Ol</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Mesajlaşma Sayfası -->
+        <div id="messagesPage" class="page">
+            <div class="page-content">
+                <div class="messages" id="messageContainer">
+                    <!-- Mesajlar buraya gelecek -->
+                </div>
+
+                <div class="input-container">
+                    <input type="text"
+                           id="messageInput"
+                           placeholder="Mesajınızı yazın...">
+                    <button onclick="sendMessage()">Gönder</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kişiler Sayfası -->
+        <div id="contactsPage" class="page">
+            <div class="page-content">
+                <div class="contacts-header">
+                    <h2>Kişiler</h2>
+                    <div class="contacts-count">Toplam: <span id="contactCount">0</span></div>
+                </div>
+                <div class="add-contact">
+                    <input type="email" 
+                           id="newContactEmail" 
+                           placeholder="Kişi eklemek için e-posta girin..."
+                           class="contact-input">
+                    <button onclick="addContact()">Ekle</button>
+                </div>
+                <div class="contacts-search">
+                    <input type="text" 
+                           placeholder="Kişi ara..." 
+                           onkeyup="searchContacts(this.value)">
+                </div>
+                <div class="contacts-list" id="contactsList">
+                    <!-- Kişiler listesi buraya gelecek -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Profil Sayfası -->
+        <div id="profilePage" class="page">
+            <div class="page-content">
+                <h2>Profil</h2>
+                <div class="form-group">
+                    <label>Profil Fotoğrafı</label>
+                    <input type="file" accept="image/*" id="profileImage">
+                </div>
+                <div class="form-group">
+                    <label>Ad Soyad</label>
+                    <input type="text" id="profileName">
+                </div>
+                <div class="form-group">
+                    <label>E-posta</label>
+                    <input type="email" id="profileEmail" readonly>
+                </div>
+                <button onclick="saveProfile()">Kaydet</button>
+            </div>
+        </div>
+
+        <!-- Ayarlar Sayfası -->
+        <div id="settingsPage" class="page">
+            <div class="page-content">
+                <h2>Ayarlar</h2>
+                <div class="form-group">
+                    <label>Mesaj PIN (3 haneli)</label>
+                    <input type="password" id="settingsPin" maxlength="3">
+                </div>
+                <div class="form-group">
+                    <label>Şifre Değiştir</label>
+                    <input type="password" placeholder="Mevcut Şifre" id="currentPassword">
+                    <input type="password" placeholder="Yeni Şifre" id="newPassword">
+                </div>
+                <button onclick="saveSettings()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1>Şifreli Mesajlaşma</h1>
+        <button class="settings-btn" onclick="openSettings()">⚙️</button>
+    </div>
+
+    <div class="messages" id="messageContainer">
+        <!-- Mesajlar buraya gelecek -->
+    </div>
+
+    <div class="input-container">
+        <input type="text"
+               id="messageInput"
+               placeholder="Mesajınızı yazın...">
+        <button onclick="sendMessage()">Gönder</button>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Ayarlar</h2>
+                <button class="close-btn" onclick="closeSettings()">✕</button>
+            </div>
+            <div class="form-group">
+                <label for="pinInput">PIN Kodu (3 haneli)</label>
+                <input type="password"
+                       id="pinInput"
+                       maxlength="3"
+                       placeholder="Yeni PIN giriniz"
+                       style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 8px;">
+            </div>
+            <button onclick="saveSettings()">Kaydet</button>
+        </div>
+    </div>
 
     <script>
         let PIN = localStorage.getItem('messagePin') || '123';

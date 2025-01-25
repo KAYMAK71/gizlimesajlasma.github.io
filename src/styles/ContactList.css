@@ -1,32 +1,8 @@
 .contact-list {
-  padding: 10px;
-}
-
-.contact-item {
-  padding: 10px;
-  margin: 5px 0;
-  border-radius: 5px;
-  cursor: pointer;
-  background-color: #f5f5f5;
-  transition: background-color 0.2s;
-}
-
-.contact-item:hover {
-  background-color: #e0e0e0;
-}
-
-.contact-name {
+  padding: 15px;
+  height: 100%;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.bot-badge {
-  background-color: #007bff;
-  color: white;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 12px;
+  flex-direction: column;
 }
 
 .search-bar {
@@ -35,10 +11,72 @@
 
 .search-bar input {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
+  padding: 10px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background-color: #333;
+  color: white;
+}
+
+.contacts {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background-color: #333;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.contact-item:hover {
+  background-color: #444;
+}
+
+.contact-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #007bff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  font-size: 20px;
+}
+
+.contact-info {
+  flex: 1;
+}
+
+.contact-name {
+  font-weight: bold;
+  color: white;
+}
+
+.contact-description {
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.bot-badge {
+  display: inline-block;
+  background-color: #007bff;
+  color: white;
+  padding: 2px 6px;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.bot-contact {
+  border-left: 3px solid #007bff;
 }
 
 .version-number {

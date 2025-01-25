@@ -1,52 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { AIBot } from '../services/AIBot';
-import { AuthService } from '../services/AuthService';
+import '../styles/ChatHistory.css';
 
 const ChatHistory = ({ contactId }) => {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
 
+  // Kontağın bilgilerini al
+  const getContactInfo = () => {
+    if (contactId === 'ai-bot') {
+      return {
+        name: 'YZ Asistanı',
+        avatar: '🤖',
+        isBot: true
+      };
+    }
+    return null;
+  };
+
   useEffect(() => {
-    loadMessages();
+    // Karşılama mesajını göster
+    if (contactId === 'ai-bot') {
+      const welcomeMessage = {
+        id: Date.now(),
+        text: 'Merhaba! Ben YZ Asistanı. Size nasıl yardımcı olabilirim?',
+        timestamp: new Date().toISOString(),
+        isBot: true
+      };
+      setMessages([welcomeMessage]);
+    }
   }, [contactId]);
-
-  const loadMessages = () => {
-    const currentUser = AuthService.getCurrentUser();
-    if (currentUser) {
-      // Kullanıcıya özel sohbet geçmişini yükle
-      const chatKey = `chat_${currentUser.id}_${contactId}`;
-      const savedMessages = localStorage.getItem(chatKey);
-      if (savedMessages) {
-        setMessages(JSON.parse(savedMessages));
-      } else {
-        setMessages([]); // Yeni sohbet başlat
-      }
-    }
-  };
-
-  const addMessage = (newMessage) => {
-    const currentUser = AuthService.getCurrentUser();
-    if (currentUser) {
-      const updatedMessages = [...messages, newMessage];
-      setMessages(updatedMessages);
-      
-      // Sohbet geçmişini kullanıcıya özel olarak kaydet
-      const chatKey = `chat_${currentUser.id}_${contactId}`;
-      localStorage.setItem(chatKey, JSON.stringify(updatedMessages));
-    }
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (messageInput.trim()) {
+      // Kullanıcı mesajı
       const userMessage = {
         id: Date.now(),
         text: messageInput,
         timestamp: new Date().toISOString(),
         isUser: true
       };
-      addMessage(userMessage);
+      setMessages(prev => [...prev, userMessage]);
 
+      // Bot yanıtı
       if (contactId === 'ai-bot') {
         setTimeout(() => {
           const botResponse = {
@@ -55,33 +52,46 @@ const ChatHistory = ({ contactId }) => {
             timestamp: new Date().toISOString(),
             isBot: true
           };
-          addMessage(botResponse);
-        }, 1000);
+          setMessages(prev => [...prev, botResponse]);
+        }, 500);
       }
       setMessageInput('');
     }
   };
 
+  const contactInfo = getContactInfo();
+
   return (
-    <div className="chat-history">
-      <div className="messages">
+    <div className="chat-container">
+      {contactInfo && (
+        <div className="chat-header">
+          <div className="contact-avatar">{contactInfo.avatar}</div>
+          <div className="contact-info">
+            <div className="contact-name">{contactInfo.name}</div>
+            {contactInfo.isBot && <div className="contact-status">Bot</div>}
+          </div>
+        </div>
+      )}
+      <div className="messages-container">
         {messages.map(message => (
           <div key={message.id} className={`message ${message.isBot ? 'bot' : 'user'}`}>
-            {message.text}
+            <div className="message-content">{message.text}</div>
+            <div className="message-timestamp">
+              {new Date(message.timestamp).toLocaleTimeString()}
+            </div>
           </div>
         ))}
       </div>
-      <div className="chat-input">
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            value={messageInput}
-            onChange={(e) => setMessageInput(e.target.value)}
-            placeholder="Mesajınızı yazın..."
-          />
-          <button type="submit">Gönder</button>
-        </form>
-      </div>
+      <form onSubmit={handleSubmit} className="message-input-form">
+        <input
+          type="text"
+          value={messageInput}
+          onChange={(e) => setMessageInput(e.target.value)}
+          placeholder="Mesajınızı yazın..."
+          className="message-input"
+        />
+        <button type="submit" className="send-button">Gönder</button>
+      </form>
     </div>
   );
 };

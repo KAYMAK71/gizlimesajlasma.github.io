@@ -1,51 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { AuthService } from '../services/AuthService';
-import './ContactList.css';
+import '../styles/ContactList.css';
 
 const ContactList = ({ onSelectContact }) => {
   const [contacts, setContacts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    loadContacts();
-  }, []);
-
-  const loadContacts = () => {
     // YZ Asistanı'nı oluştur
     const aiBot = {
       id: 'ai-bot',
       name: 'YZ Asistanı',
       isBot: true,
-      pin: '123'
+      pin: '123',
+      description: 'Yapay Zeka Sohbet Botu'
     };
 
-    let currentContacts = [];
-    const currentUser = AuthService.getCurrentUser();
+    // Asistanı direkt olarak contacts listesine ekle
+    setContacts([aiBot]);
+  }, []);
 
-    if (currentUser) {
-      // Kullanıcının mevcut kişileri
-      currentContacts = currentUser.contacts || [];
-      
-      // Bot yoksa ekle
-      if (!currentContacts.some(contact => contact.id === 'ai-bot')) {
-        currentContacts = [aiBot, ...currentContacts];
-        
-        // Kullanıcı bilgilerini güncelle
-        currentUser.contacts = currentContacts;
-        AuthService.saveUser(currentUser);
-      } else {
-        // Bot varsa en başa taşı
-        currentContacts = currentContacts.filter(c => c.id !== 'ai-bot');
-        currentContacts = [aiBot, ...currentContacts];
-      }
-    } else {
-      // Kullanıcı yoksa sadece botu göster
-      currentContacts = [aiBot];
-    }
-
-    setContacts(currentContacts);
-  };
-
+  // Arama filtrelemesi
   const filteredContacts = contacts.filter(contact =>
     contact.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -64,17 +39,24 @@ const ContactList = ({ onSelectContact }) => {
         {filteredContacts.map(contact => (
           <div
             key={contact.id}
-            className="contact-item"
+            className={`contact-item ${contact.isBot ? 'bot-contact' : ''}`}
             onClick={() => onSelectContact(contact)}
           >
-            <div className="contact-name">
-              {contact.name}
-              {contact.isBot && <span className="bot-badge">Bot</span>}
+            <div className="contact-avatar">
+              {contact.isBot ? '🤖' : contact.name.charAt(0)}
+            </div>
+            <div className="contact-info">
+              <div className="contact-name">
+                {contact.name}
+              </div>
+              {contact.description && (
+                <div className="contact-description">{contact.description}</div>
+              )}
+              {contact.isBot && <div className="bot-badge">Bot</div>}
             </div>
           </div>
         ))}
       </div>
-      <div className="version-number">v1.2</div>
     </div>
   );
 };
