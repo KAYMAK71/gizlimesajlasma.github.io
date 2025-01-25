@@ -1,0 +1,51 @@
+.contact-list {
+  padding: 10px;
+}
+
+.contact-item {
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: #f5f5f5;
+  transition: background-color 0.2s;
+}
+
+.contact-item:hover {
+  background-color: #e0e0e0;
+}
+
+.contact-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bot-badge {
+  background-color: #007bff;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.search-bar {
+  margin-bottom: 15px;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.version-number {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  font-size: 12px;
+  color: #666;
+  opacity: 0.8;
+} 
