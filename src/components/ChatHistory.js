@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { AuthService } from '../services/AuthService';
 import { AIBot } from '../services/AIBot';
 import '../styles/ChatHistory.css';
 
 const ChatHistory = ({ contactId }) => {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
+  const currentUser = AuthService.getCurrentUser();
 
   // Kontağın bilgilerini al
   const getContactInfo = () => {
@@ -15,6 +17,16 @@ const ChatHistory = ({ contactId }) => {
         isBot: true
       };
     }
+    // Normal kullanıcı bilgilerini al
+    const users = AuthService.getUsers();
+    const contact = users.find(u => u.email === contactId);
+    if (contact) {
+      return {
+        name: contact.name || contact.email,
+        avatar: contact.name ? contact.name[0].toUpperCase() : '👤',
+        email: contact.email
+      };
+    }
     return null;
   };
 
@@ -22,65 +34,46 @@ const ChatHistory = ({ contactId }) => {
     loadMessages();
   }, [contactId]);
 
-  // Mesajları yükle
   const loadMessages = () => {
-    // LocalStorage'dan mevcut sohbeti yükle
-    const savedMessages = localStorage.getItem(`chat_${contactId}`);
-    let chatMessages = savedMessages ? JSON.parse(savedMessages) : [];
+    if (contactId === 'ai-bot') {
+      // Bot mesajları için mevcut mantığı kullan
+      const savedMessages = localStorage.getItem(`chat_${contactId}`);
+      let chatMessages = savedMessages ? JSON.parse(savedMessages) : [];
 
-    // Eğer bot ile ilk konuşma ise karşılama mesajı ekle
-    if (contactId === 'ai-bot' && chatMessages.length === 0) {
-      const welcomeMessage = {
-        id: Date.now(),
-        text: 'Merhaba! Ben YZ Asistanı. Size nasıl yardımcı olabilirim?',
-        timestamp: new Date().toISOString(),
-        isBot: true
-      };
-      chatMessages = [welcomeMessage];
-      saveMessages(chatMessages);
-    }
-
-    setMessages(chatMessages);
-    scrollToBottom();
-  };
-
-  // Mesajları kaydet
-  const saveMessages = (newMessages) => {
-    localStorage.setItem(`chat_${contactId}`, JSON.stringify(newMessages));
-  };
-
-  // Yeni mesaj ekle
-  const addMessage = (message) => {
-    const updatedMessages = [...messages, message];
-    setMessages(updatedMessages);
-    saveMessages(updatedMessages);
-    scrollToBottom();
-  };
-
-  // Otomatik kaydırma
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      const messagesContainer = document.querySelector('.messages-container');
-      if (messagesContainer) {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      if (chatMessages.length === 0) {
+        const welcomeMessage = {
+          id: Date.now(),
+          text: 'Merhaba! Ben YZ Asistanı. Size nasıl yardımcı olabilirim?',
+          timestamp: new Date().toISOString(),
+          isBot: true
+        };
+        chatMessages = [welcomeMessage];
+        localStorage.setItem(`chat_${contactId}`, JSON.stringify(chatMessages));
       }
-    }, 100);
+      setMessages(chatMessages);
+    } else {
+      // Kullanıcılar arası mesajları yükle
+      const chatMessages = AuthService.getMessages(currentUser.email, contactId);
+      setMessages(chatMessages);
+    }
+    scrollToBottom();
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (messageInput.trim()) {
-      // Kullanıcı mesajı
-      const userMessage = {
-        id: Date.now(),
-        text: messageInput,
-        timestamp: new Date().toISOString(),
-        isUser: true
-      };
-      addMessage(userMessage);
-
-      // Bot yanıtı
       if (contactId === 'ai-bot') {
+        // Bot ile mesajlaşma mantığı
+        const userMessage = {
+          id: Date.now(),
+          text: messageInput,
+          timestamp: new Date().toISOString(),
+          isUser: true
+        };
+        const updatedMessages = [...messages, userMessage];
+        setMessages(updatedMessages);
+        localStorage.setItem(`chat_${contactId}`, JSON.stringify(updatedMessages));
+
         setTimeout(() => {
           const botResponse = {
             id: Date.now() + 1,
@@ -88,11 +81,36 @@ const ChatHistory = ({ contactId }) => {
             timestamp: new Date().toISOString(),
             isBot: true
           };
-          addMessage(botResponse);
+          const messagesWithResponse = [...updatedMessages, botResponse];
+          setMessages(messagesWithResponse);
+          localStorage.setItem(`chat_${contactId}`, JSON.stringify(messagesWithResponse));
+          scrollToBottom();
         }, 500);
+      } else {
+        // Kullanıcılar arası mesajlaşma
+        try {
+          const newMessages = AuthService.saveMessage(
+            currentUser.email,
+            contactId,
+            messageInput
+          );
+          setMessages(newMessages);
+          scrollToBottom();
+        } catch (error) {
+          console.error('Mesaj gönderilemedi:', error);
+        }
       }
       setMessageInput('');
     }
+  };
+
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      const messagesContainer = document.querySelector('.messages-container');
+      if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+    }, 100);
   };
 
   const contactInfo = getContactInfo();
@@ -104,13 +122,21 @@ const ChatHistory = ({ contactId }) => {
           <div className="contact-avatar">{contactInfo.avatar}</div>
           <div className="contact-info">
             <div className="contact-name">{contactInfo.name}</div>
-            {contactInfo.isBot && <div className="contact-status">Bot</div>}
+            {contactInfo.isBot ? (
+              <div className="contact-status">Bot</div>
+            ) : (
+              <div className="contact-email">{contactInfo.email}</div>
+            )}
           </div>
         </div>
       )}
       <div className="messages-container">
         {messages.map(message => (
-          <div key={message.id} className={`message ${message.isBot ? 'bot' : 'user'}`}>
+          <div
+            key={message.id}
+            className={`message ${message.isBot ? 'bot' : 
+              message.senderId === currentUser.email ? 'user' : 'other'}`}
+          >
             <div className="message-content">{message.text}</div>
             <div className="message-timestamp">
               {new Date(message.timestamp).toLocaleTimeString()}

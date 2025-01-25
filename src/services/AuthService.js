@@ -55,5 +55,52 @@ export const AuthService = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // Mesajları kaydetmek ve almak için yeni fonksiyonlar
+  saveMessage: (senderId, receiverId, message) => {
+    try {
+      // Benzersiz bir sohbet ID'si oluştur (her iki kullanıcı için aynı olmalı)
+      const chatId = [senderId, receiverId].sort().join('_');
+      
+      // Mevcut mesajları al
+      const allChats = JSON.parse(localStorage.getItem('all_chats') || '{}');
+      const chatMessages = allChats[chatId] || [];
+      
+      // Yeni mesajı ekle
+      chatMessages.push({
+        id: Date.now(),
+        senderId,
+        receiverId,
+        text: message,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Mesajları kaydet
+      allChats[chatId] = chatMessages;
+      localStorage.setItem('all_chats', JSON.stringify(allChats));
+      
+      return chatMessages;
+    } catch (error) {
+      console.error('Mesaj kaydedilemedi:', error);
+      throw error;
+    }
+  },
+
+  getMessages: (userId1, userId2) => {
+    try {
+      const chatId = [userId1, userId2].sort().join('_');
+      const allChats = JSON.parse(localStorage.getItem('all_chats') || '{}');
+      return allChats[chatId] || [];
+    } catch (error) {
+      console.error('Mesajlar alınamadı:', error);
+      return [];
+    }
+  },
+
+  // Kullanıcı bilgilerini e-posta ile alma
+  getUserByEmail: (email) => {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    return users.find(user => user.email === email);
   }
 }; 
