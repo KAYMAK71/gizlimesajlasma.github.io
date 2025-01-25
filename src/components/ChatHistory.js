@@ -1,32 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { AIBot } from '../services/AIBot';
+import { AuthService } from '../services/AuthService';
 
 const ChatHistory = ({ contactId }) => {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
 
   useEffect(() => {
-    // LocalStorage'dan sohbet geçmişini yükle
-    const loadMessages = () => {
-      const savedMessages = localStorage.getItem(`chat_${contactId}`);
-      if (savedMessages) {
-        setMessages(JSON.parse(savedMessages));
-      }
-    };
     loadMessages();
   }, [contactId]);
 
+  const loadMessages = () => {
+    const currentUser = AuthService.getCurrentUser();
+    if (currentUser) {
+      // Kullanıcıya özel sohbet geçmişini yükle
+      const chatKey = `chat_${currentUser.id}_${contactId}`;
+      const savedMessages = localStorage.getItem(chatKey);
+      if (savedMessages) {
+        setMessages(JSON.parse(savedMessages));
+      } else {
+        setMessages([]); // Yeni sohbet başlat
+      }
+    }
+  };
+
   const addMessage = (newMessage) => {
-    const updatedMessages = [...messages, newMessage];
-    setMessages(updatedMessages);
-    // Sohbet geçmişini localStorage'a kaydet
-    localStorage.setItem(`chat_${contactId}`, JSON.stringify(updatedMessages));
+    const currentUser = AuthService.getCurrentUser();
+    if (currentUser) {
+      const updatedMessages = [...messages, newMessage];
+      setMessages(updatedMessages);
+      
+      // Sohbet geçmişini kullanıcıya özel olarak kaydet
+      const chatKey = `chat_${currentUser.id}_${contactId}`;
+      localStorage.setItem(chatKey, JSON.stringify(updatedMessages));
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (messageInput.trim()) {
-      // Kullanıcı mesajı
       const userMessage = {
         id: Date.now(),
         text: messageInput,
@@ -35,9 +47,7 @@ const ChatHistory = ({ contactId }) => {
       };
       addMessage(userMessage);
 
-      // Eğer seçili kişi bot ise
       if (contactId === 'ai-bot') {
-        // Bot cevabı
         setTimeout(() => {
           const botResponse = {
             id: Date.now() + 1,
@@ -46,9 +56,8 @@ const ChatHistory = ({ contactId }) => {
             isBot: true
           };
           addMessage(botResponse);
-        }, 1000); // 1 saniyelik gecikme ile bot cevap versin
+        }, 1000);
       }
-
       setMessageInput('');
     }
   };
@@ -61,6 +70,17 @@ const ChatHistory = ({ contactId }) => {
             {message.text}
           </div>
         ))}
+      </div>
+      <div className="chat-input">
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            value={messageInput}
+            onChange={(e) => setMessageInput(e.target.value)}
+            placeholder="Mesajınızı yazın..."
+          />
+          <button type="submit">Gönder</button>
+        </form>
       </div>
     </div>
   );
