@@ -36,7 +36,7 @@ const ChatHistory = ({ contactId }) => {
 
   const loadMessages = () => {
     if (contactId === 'ai-bot') {
-      // Bot mesajları için mevcut mantığı kullan
+      // Bot mesajları
       const savedMessages = localStorage.getItem(`chat_${contactId}`);
       let chatMessages = savedMessages ? JSON.parse(savedMessages) : [];
 
@@ -52,103 +52,80 @@ const ChatHistory = ({ contactId }) => {
       }
       setMessages(chatMessages);
     } else {
-      // Kullanıcılar arası mesajları yükle
+      // Kullanıcı mesajları
       const chatId = [currentUser.email, contactId].sort().join('_');
       const allChats = JSON.parse(localStorage.getItem('all_chats') || '{}');
       const currentChat = allChats[chatId] || [];
-
-      // Okunmamış mesajları okundu olarak işaretle
-      const updatedChat = currentChat.map(msg => {
-        if (msg.receiverId === currentUser.email && !msg.read) {
-          return { ...msg, read: true, status: 'read' };
-        }
-        return msg;
-      });
-
-      if (JSON.stringify(currentChat) !== JSON.stringify(updatedChat)) {
-        allChats[chatId] = updatedChat;
-        localStorage.setItem('all_chats', JSON.stringify(allChats));
-      }
-
-      setMessages(updatedChat);
+      setMessages(currentChat);
     }
     scrollToBottom();
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (messageInput.trim()) {
-      if (contactId === 'ai-bot') {
-        // Bot ile mesajlaşma mantığı
-        const userMessage = {
-          id: Date.now(),
-          text: messageInput,
+    if (!messageInput.trim()) return;
+
+    if (contactId === 'ai-bot') {
+      // Bot mesajı
+      const userMessage = {
+        id: Date.now(),
+        text: messageInput,
+        timestamp: new Date().toISOString(),
+        isUser: true
+      };
+
+      const updatedMessages = [...messages, userMessage];
+      setMessages(updatedMessages);
+      localStorage.setItem(`chat_${contactId}`, JSON.stringify(updatedMessages));
+
+      // Bot yanıtı
+      setTimeout(() => {
+        const botResponse = {
+          id: Date.now() + 1,
+          text: AIBot.generateResponse(messageInput),
           timestamp: new Date().toISOString(),
-          isUser: true
+          isBot: true
         };
-        const updatedMessages = [...messages, userMessage];
-        setMessages(updatedMessages);
-        localStorage.setItem(`chat_${contactId}`, JSON.stringify(updatedMessages));
+        const messagesWithResponse = [...updatedMessages, botResponse];
+        setMessages(messagesWithResponse);
+        localStorage.setItem(`chat_${contactId}`, JSON.stringify(messagesWithResponse));
+        scrollToBottom();
+      }, 1000);
+    } else {
+      // Kullanıcı mesajı
+      const newMessage = {
+        id: Date.now(),
+        senderId: currentUser.email,
+        receiverId: contactId,
+        text: messageInput,
+        timestamp: new Date().toISOString(),
+        status: 'sent'
+      };
 
-        setTimeout(() => {
-          const botResponse = {
-            id: Date.now() + 1,
-            text: AIBot.generateResponse(messageInput),
-            timestamp: new Date().toISOString(),
-            isBot: true
-          };
-          const messagesWithResponse = [...updatedMessages, botResponse];
-          setMessages(messagesWithResponse);
-          localStorage.setItem(`chat_${contactId}`, JSON.stringify(messagesWithResponse));
-          scrollToBottom();
-        }, 500);
-      } else {
-        try {
-          // Yeni mesaj objesi oluştur
-          const newMessage = {
-            id: Date.now(),
-            senderId: currentUser.email,
-            receiverId: contactId,
-            text: messageInput,
-            timestamp: new Date().toISOString(),
-            status: 'sent', // Mesaj durumu: sent, delivered, read
-            delivered: false,
-            read: false
-          };
+      const chatId = [currentUser.email, contactId].sort().join('_');
+      const allChats = JSON.parse(localStorage.getItem('all_chats') || '{}');
+      const currentChat = allChats[chatId] || [];
+      
+      const updatedChat = [...currentChat, newMessage];
+      allChats[chatId] = updatedChat;
+      
+      localStorage.setItem('all_chats', JSON.stringify(allChats));
+      setMessages(updatedChat);
+      scrollToBottom();
 
-          // Mevcut sohbeti al
-          const chatId = [currentUser.email, contactId].sort().join('_');
-          const allChats = JSON.parse(localStorage.getItem('all_chats') || '{}');
-          const currentChat = allChats[chatId] || [];
-          
-          // Yeni mesajı ekle
-          currentChat.push(newMessage);
-          
-          // Güncellenmiş sohbeti kaydet
-          allChats[chatId] = currentChat;
-          localStorage.setItem('all_chats', JSON.stringify(allChats));
-          
-          // Mesajları güncelle
-          setMessages(currentChat);
-          scrollToBottom();
-
-          // Mesajı alıcıya ilet (simülasyon)
-          setTimeout(() => {
-            const updatedMessage = { ...newMessage, delivered: true, status: 'delivered' };
-            const updatedChat = currentChat.map(msg => 
-              msg.id === newMessage.id ? updatedMessage : msg
-            );
-            allChats[chatId] = updatedChat;
-            localStorage.setItem('all_chats', JSON.stringify(allChats));
-            setMessages(updatedChat);
-          }, 1000);
-
-        } catch (error) {
-          console.error('Mesaj gönderilemedi:', error);
-        }
-      }
-      setMessageInput('');
+      // Mesaj iletildi simülasyonu
+      setTimeout(() => {
+        const deliveredMessage = { ...newMessage, status: 'delivered' };
+        const chatWithDelivered = updatedChat.map(msg => 
+          msg.id === newMessage.id ? deliveredMessage : msg
+        );
+        allChats[chatId] = chatWithDelivered;
+        localStorage.setItem('all_chats', JSON.stringify(allChats));
+        setMessages(chatWithDelivered);
+      }, 1000);
     }
+
+    setMessageInput('');
   };
 
   const scrollToBottom = () => {
@@ -191,7 +168,7 @@ const ChatHistory = ({ contactId }) => {
               <span className="message-timestamp">
                 {new Date(message.timestamp).toLocaleTimeString()}
               </span>
-              {message.senderId === currentUser.email && !message.isBot && (
+              {!message.isBot && message.senderId === currentUser.email && (
                 <span className="message-status">
                   {message.status === 'sent' && '✓'}
                   {message.status === 'delivered' && '✓✓'}
