@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { AuthService } from '../services/AuthService';
+import './ContactList.css';
 
 const ContactList = ({ onSelectContact }) => {
   const [contacts, setContacts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
+    loadContacts();
+  }, []);
+
+  const loadContacts = () => {
     // YZ Asistanı'nı oluştur
     const aiBot = {
       id: 'ai-bot',
@@ -14,36 +19,33 @@ const ContactList = ({ onSelectContact }) => {
       pin: '123'
     };
 
-    // Mevcut kullanıcının kişilerini yükle
+    let currentContacts = [];
     const currentUser = AuthService.getCurrentUser();
-    if (currentUser) {
-      // Eğer contacts dizisi yoksa oluştur
-      if (!currentUser.contacts) {
-        currentUser.contacts = [];
-      }
 
-      // Eğer bot henüz eklenmemişse ekle
-      if (!currentUser.contacts.some(contact => contact.id === 'ai-bot')) {
-        currentUser.contacts.unshift(aiBot); // En başa ekle
+    if (currentUser) {
+      // Kullanıcının mevcut kişileri
+      currentContacts = currentUser.contacts || [];
+      
+      // Bot yoksa ekle
+      if (!currentContacts.some(contact => contact.id === 'ai-bot')) {
+        currentContacts = [aiBot, ...currentContacts];
+        
+        // Kullanıcı bilgilerini güncelle
+        currentUser.contacts = currentContacts;
         AuthService.saveUser(currentUser);
       } else {
-        // Bot zaten varsa, en başa taşı
-        const botIndex = currentUser.contacts.findIndex(contact => contact.id === 'ai-bot');
-        if (botIndex > 0) {
-          const [bot] = currentUser.contacts.splice(botIndex, 1);
-          currentUser.contacts.unshift(bot);
-          AuthService.saveUser(currentUser);
-        }
+        // Bot varsa en başa taşı
+        currentContacts = currentContacts.filter(c => c.id !== 'ai-bot');
+        currentContacts = [aiBot, ...currentContacts];
       }
-
-      setContacts(currentUser.contacts);
     } else {
       // Kullanıcı yoksa sadece botu göster
-      setContacts([aiBot]);
+      currentContacts = [aiBot];
     }
-  }, []);
 
-  // Arama filtrelemesi
+    setContacts(currentContacts);
+  };
+
   const filteredContacts = contacts.filter(contact =>
     contact.name.toLowerCase().includes(searchTerm.toLowerCase())
   );

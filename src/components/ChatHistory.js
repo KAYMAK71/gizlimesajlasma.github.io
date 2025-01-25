@@ -54,8 +54,14 @@ const ChatHistory = ({ contactId }) => {
   };
 
   return (
-    <div>
-      {/* Render your messages and input form here */}
+    <div className="chat-history">
+      <div className="messages">
+        {messages.map(message => (
+          <div key={message.id} className={`message ${message.isBot ? 'bot' : 'user'}`}>
+            {message.text}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
