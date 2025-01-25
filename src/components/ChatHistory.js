@@ -53,8 +53,24 @@ const ChatHistory = ({ contactId }) => {
       setMessages(chatMessages);
     } else {
       // Kullanıcılar arası mesajları yükle
-      const chatMessages = AuthService.getMessages(currentUser.email, contactId);
-      setMessages(chatMessages);
+      const chatId = [currentUser.email, contactId].sort().join('_');
+      const allChats = JSON.parse(localStorage.getItem('all_chats') || '{}');
+      const currentChat = allChats[chatId] || [];
+
+      // Okunmamış mesajları okundu olarak işaretle
+      const updatedChat = currentChat.map(msg => {
+        if (msg.receiverId === currentUser.email && !msg.read) {
+          return { ...msg, read: true, status: 'read' };
+        }
+        return msg;
+      });
+
+      if (JSON.stringify(currentChat) !== JSON.stringify(updatedChat)) {
+        allChats[chatId] = updatedChat;
+        localStorage.setItem('all_chats', JSON.stringify(allChats));
+      }
+
+      setMessages(updatedChat);
     }
     scrollToBottom();
   };
@@ -87,7 +103,6 @@ const ChatHistory = ({ contactId }) => {
           scrollToBottom();
         }, 500);
       } else {
-        // Kullanıcılar arası mesajlaşma
         try {
           // Yeni mesaj objesi oluştur
           const newMessage = {
@@ -95,7 +110,10 @@ const ChatHistory = ({ contactId }) => {
             senderId: currentUser.email,
             receiverId: contactId,
             text: messageInput,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            status: 'sent', // Mesaj durumu: sent, delivered, read
+            delivered: false,
+            read: false
           };
 
           // Mevcut sohbeti al
@@ -113,6 +131,18 @@ const ChatHistory = ({ contactId }) => {
           // Mesajları güncelle
           setMessages(currentChat);
           scrollToBottom();
+
+          // Mesajı alıcıya ilet (simülasyon)
+          setTimeout(() => {
+            const updatedMessage = { ...newMessage, delivered: true, status: 'delivered' };
+            const updatedChat = currentChat.map(msg => 
+              msg.id === newMessage.id ? updatedMessage : msg
+            );
+            allChats[chatId] = updatedChat;
+            localStorage.setItem('all_chats', JSON.stringify(allChats));
+            setMessages(updatedChat);
+          }, 1000);
+
         } catch (error) {
           console.error('Mesaj gönderilemedi:', error);
         }
@@ -157,8 +187,17 @@ const ChatHistory = ({ contactId }) => {
             }`}
           >
             <div className="message-content">{message.text}</div>
-            <div className="message-timestamp">
-              {new Date(message.timestamp).toLocaleTimeString()}
+            <div className="message-info">
+              <span className="message-timestamp">
+                {new Date(message.timestamp).toLocaleTimeString()}
+              </span>
+              {message.senderId === currentUser.email && !message.isBot && (
+                <span className="message-status">
+                  {message.status === 'sent' && '✓'}
+                  {message.status === 'delivered' && '✓✓'}
+                  {message.status === 'read' && '✓✓'}
+                </span>
+              )}
             </div>
           </div>
         ))}
