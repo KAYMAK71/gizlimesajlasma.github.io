@@ -57,40 +57,45 @@ export const AuthService = {
     }
   },
 
-  // Mesajları kaydetmek ve almak için yeni fonksiyonlar
-  saveMessage: (senderId, receiverId, message) => {
+  // Mesaj gönderme
+  saveMessage: (senderId, receiverId, messageText) => {
     try {
-      // Benzersiz bir sohbet ID'si oluştur (her iki kullanıcı için aynı olmalı)
+      // Benzersiz sohbet ID'si oluştur
       const chatId = [senderId, receiverId].sort().join('_');
       
-      // Mevcut mesajları al
-      const allChats = JSON.parse(localStorage.getItem('all_chats') || '{}');
-      const chatMessages = allChats[chatId] || [];
-      
-      // Yeni mesajı ekle
-      chatMessages.push({
+      // Yeni mesaj objesi
+      const newMessage = {
         id: Date.now(),
         senderId,
         receiverId,
-        text: message,
-        timestamp: new Date().toISOString()
-      });
+        text: messageText,
+        timestamp: new Date().toISOString(),
+        status: 'sent'
+      };
+
+      // Mevcut sohbeti al
+      let allChats = JSON.parse(localStorage.getItem('chats') || '{}');
+      let currentChat = allChats[chatId] || [];
       
-      // Mesajları kaydet
-      allChats[chatId] = chatMessages;
-      localStorage.setItem('all_chats', JSON.stringify(allChats));
+      // Yeni mesajı ekle
+      currentChat.push(newMessage);
+      allChats[chatId] = currentChat;
       
-      return chatMessages;
+      // Sohbeti kaydet
+      localStorage.setItem('chats', JSON.stringify(allChats));
+      
+      return currentChat;
     } catch (error) {
       console.error('Mesaj kaydedilemedi:', error);
-      throw error;
+      return [];
     }
   },
 
+  // Mesajları getir
   getMessages: (userId1, userId2) => {
     try {
       const chatId = [userId1, userId2].sort().join('_');
-      const allChats = JSON.parse(localStorage.getItem('all_chats') || '{}');
+      const allChats = JSON.parse(localStorage.getItem('chats') || '{}');
       return allChats[chatId] || [];
     } catch (error) {
       console.error('Mesajlar alınamadı:', error);
@@ -98,9 +103,51 @@ export const AuthService = {
     }
   },
 
+  // Mesaj durumunu güncelle
+  updateMessageStatus: (chatId, messageId, status) => {
+    try {
+      const allChats = JSON.parse(localStorage.getItem('chats') || '{}');
+      const currentChat = allChats[chatId] || [];
+      
+      const updatedChat = currentChat.map(msg => 
+        msg.id === messageId ? { ...msg, status } : msg
+      );
+
+      allChats[chatId] = updatedChat;
+      localStorage.setItem('chats', JSON.stringify(allChats));
+      
+      return updatedChat;
+    } catch (error) {
+      console.error('Mesaj durumu güncellenemedi:', error);
+      return null;
+    }
+  },
+
   // Kullanıcı bilgilerini e-posta ile alma
   getUserByEmail: (email) => {
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     return users.find(user => user.email === email);
+  },
+
+  // Kişileri kaydetme
+  saveContacts: (userEmail, contacts) => {
+    try {
+      localStorage.setItem(`contacts_${userEmail}`, JSON.stringify(contacts));
+      return true;
+    } catch (error) {
+      console.error('Kişiler kaydedilemedi:', error);
+      return false;
+    }
+  },
+
+  // Kişileri getirme
+  getContacts: (userEmail) => {
+    try {
+      const contacts = localStorage.getItem(`contacts_${userEmail}`);
+      return contacts ? JSON.parse(contacts) : [];
+    } catch (error) {
+      console.error('Kişiler alınamadı:', error);
+      return [];
+    }
   }
 }; 

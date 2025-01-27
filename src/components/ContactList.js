@@ -8,10 +8,11 @@ const ContactList = ({ onSelectContact }) => {
   const currentUser = AuthService.getCurrentUser();
 
   useEffect(() => {
-    // Tüm kullanıcıları al
-    const allUsers = AuthService.getUsers();
-    
-    // Bot ve diğer kullanıcıları ayır
+    loadContacts();
+  }, []);
+
+  const loadContacts = () => {
+    // YZ Asistanı
     const aiBot = {
       id: 'ai-bot',
       name: 'YZ Asistanı',
@@ -19,12 +20,37 @@ const ContactList = ({ onSelectContact }) => {
       description: 'Yapay Zeka Sohbet Botu'
     };
 
-    // Mevcut kullanıcı hariç diğer kullanıcıları filtrele
-    const otherUsers = allUsers.filter(user => user.email !== currentUser.email);
+    // Kayıtlı kişileri al
+    const savedContacts = JSON.parse(localStorage.getItem(`contacts_${currentUser.email}`) || '[]');
     
-    // Bot ve diğer kullanıcıları birleştir
-    setContacts([aiBot, ...otherUsers]);
-  }, []);
+    // Tüm kullanıcıları al
+    const allUsers = AuthService.getUsers();
+    
+    // Mevcut kullanıcı hariç diğer kullanıcıları filtrele
+    const otherUsers = allUsers.filter(user => 
+      user.email !== currentUser.email && 
+      !savedContacts.some(contact => contact.email === user.email)
+    );
+
+    // Kayıtlı kişileri ve botu birleştir
+    const allContacts = [aiBot, ...savedContacts, ...otherUsers];
+    setContacts(allContacts);
+  };
+
+  const addContact = (contact) => {
+    // Kayıtlı kişileri al
+    const savedContacts = JSON.parse(localStorage.getItem(`contacts_${currentUser.email}`) || '[]');
+    
+    // Kişi zaten ekli mi kontrol et
+    if (!savedContacts.some(c => c.email === contact.email)) {
+      // Yeni kişiyi ekle
+      const updatedContacts = [...savedContacts, contact];
+      localStorage.setItem(`contacts_${currentUser.email}`, JSON.stringify(updatedContacts));
+      
+      // Listeyi güncelle
+      loadContacts();
+    }
+  };
 
   const filteredContacts = contacts.filter(contact =>
     contact.isBot ? 
@@ -47,7 +73,12 @@ const ContactList = ({ onSelectContact }) => {
           <div
             key={contact.isBot ? contact.id : contact.email}
             className={`contact-item ${contact.isBot ? 'bot-contact' : ''}`}
-            onClick={() => onSelectContact(contact.isBot ? 'ai-bot' : contact.email)}
+            onClick={() => {
+              onSelectContact(contact.isBot ? 'ai-bot' : contact.email);
+              if (!contact.isBot) {
+                addContact(contact);
+              }
+            }}
           >
             <div className="contact-avatar">
               {contact.isBot ? '🤖' : (contact.name ? contact.name[0].toUpperCase() : '👤')}
